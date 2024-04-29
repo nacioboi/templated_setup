@@ -1,0 +1,12 @@
+# Hiding secrets...
+/**/.*
+!/.gitignore
+
+# Python Junk...
+/**/__pycache__
+/**/*.pyc
+/**/*.egg-info
+
+# Miscellaneous...
+/.vscode
+/dist
