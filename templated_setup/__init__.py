@@ -39,7 +39,7 @@ THANK YOU AND TAKE CARE!
 
 
 
-class Normal_People_Date:
+class _Normal_People_Date:
 
 
 
@@ -47,7 +47,7 @@ class Normal_People_Date:
 	
 		return datetime_x_date(year_, month_, day_)
 	
-		f"[ END ] {Normal_People_Date.__new__}"
+		f"[ END ] {_Normal_People_Date.__new__}"
 
 
 
@@ -60,7 +60,7 @@ class Normal_People_Date:
 
 
 @dataclass_x_dataclass
-class Version:
+class _Version:
 
 
 
@@ -72,12 +72,12 @@ class Version:
 
 	def validate(self):
 
-		is_valid, err_msg = Version.validate_version_number(self.version_number)
+		is_valid, err_msg = _Version.validate_version_number(self.version_number)
 
 		if not is_valid:
 			raise Exception(err_msg)
 
-		f"[ END ] {Version.validate}"
+		f"[ END ] {_Version.validate}"
 
 
 
@@ -96,7 +96,7 @@ class Version:
 
 		return f"{self.date.day}{day_suffix}/{self.date.month}/{self.date.year}"
 	
-		f"[ END ] {Version.repr_date}"
+		f"[ END ] {_Version.repr_date}"
 
 
 
@@ -114,7 +114,7 @@ class Version:
 		
 		return True, ""
 	
-		f"[ END ] {Version.validate_version_number}"
+		f"[ END ] {_Version.validate_version_number}"
 
 
 
@@ -126,7 +126,7 @@ class Version:
 
 
 
-class Setup_Helper:
+class _Setup_Helper:
 
 
 
@@ -141,7 +141,7 @@ class Setup_Helper:
 
 		return "\n     |".join(notes_.split("\n"))
 	
-		f"[ END ] {Setup_Helper.__parse_notes}"
+		f"[ END ] {_Setup_Helper.__parse_notes}"
 	
 
 
@@ -167,7 +167,7 @@ class Setup_Helper:
 
 		return description
 	
-		f"[ END ] {Setup_Helper.__init_description}"
+		f"[ END ] {_Setup_Helper.__init_description}"
 
 
 
@@ -185,7 +185,7 @@ class Setup_Helper:
 			print(f"] Error [{err_msg}]")
 		
 		return ans
-		f"[ END ] {Setup_Helper.__get_answer}"
+		f"[ END ] {_Setup_Helper.__get_answer}"
 
 
 
@@ -206,7 +206,7 @@ class Setup_Helper:
 				print("] Please enter 'y' or 'n'.")
 
 		return None
-		f"[ END ] {Setup_Helper.__get_y_n}"
+		f"[ END ] {_Setup_Helper.__get_y_n}"
 
 
 
@@ -231,7 +231,7 @@ class Setup_Helper:
 
 		return None
 
-		f"[ END ] {Setup_Helper.__reload_cached_data}"
+		f"[ END ] {_Setup_Helper.__reload_cached_data}"
 
 
 	
@@ -239,23 +239,24 @@ class Setup_Helper:
 	def __reload_cached_data(cls):
 		cls._load_from_hardcoded()
 		return None
-		f"[ END ] {Setup_Helper.__reload_cached_data}"
+		f"[ END ] {_Setup_Helper.__reload_cached_data}"
 
 
 
 	@classmethod
 	def __load_date(cls, override=False):
 
-		cls.__reload_cached_data()
+		if cls._date_of_last_modified:
+			cls.__reload_cached_data()
 
-		if not override:
+		if not override and cls._json_data is not None:
 			assert cls._json_data
 			if "date" in cls._json_data:
 				cls._date_of_last_modified = datetime_x_date.fromisoformat(cls._json_data["date"])
 			else:
 				while True:
 					new = cls.__inner_load_date()
-					confirmed = Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
+					confirmed = _Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
 					if confirmed:
 						break
 
@@ -264,34 +265,34 @@ class Setup_Helper:
 
 		return None
 
-		f"[ END ] {Setup_Helper.__load_date}"
+		f"[ END ] {_Setup_Helper.__load_date}"
 
 
 
 	@classmethod
 	def __inner_load_date(cls) -> "str":
-		do_want_to_use_current_date = Setup_Helper.__get_y_n("Would you like to use the current date?")
+		do_want_to_use_current_date = _Setup_Helper.__get_y_n("Would you like to use the current date?")
 		new = None
 		if do_want_to_use_current_date:
 
 			cls._date_of_last_modified = datetime_x_date.today()
-			assert cls._json_data
-			cls._json_data["date"] = cls._date_of_last_modified.isoformat()
+			if cls._json_data:
+				cls._json_data["date"] = cls._date_of_last_modified.isoformat()
 			new = cls._date_of_last_modified.isoformat()
 
 		else:
 
-			day = int(Setup_Helper.__get_answer(
+			day = int(_Setup_Helper.__get_answer(
 				"What day was it last modified? ",
 				lambda x: (x.isdigit(), "Please enter a number."))
 			)
 
-			month = int(Setup_Helper.__get_answer(
+			month = int(_Setup_Helper.__get_answer(
 				"What month was it last modified? ",
 				lambda x: (x.isdigit(), "Please enter a number."))
 			)
 
-			year = int(Setup_Helper.__get_answer(
+			year = int(_Setup_Helper.__get_answer(
 				"What year was it last modified? ",
 				lambda x: (x.isdigit(), "Please enter a number."))
 			)
@@ -305,18 +306,20 @@ class Setup_Helper:
 			except ValueError:
 				print("] Error: Invalid date. Please try again.")
 		
-		with open(CACHE_FILE_PATH, "w") as f:
-			json_x_dump(cls._json_data, f)
+		if cls._json_data is not None:
+			with open(CACHE_FILE_PATH, "w") as f:
+				json_x_dump(cls._json_data, f)
 		assert isinstance(new, str)
 		return new
-		f"[ END ] {Setup_Helper.__inner_load_date}"
+		f"[ END ] {_Setup_Helper.__inner_load_date}"
 
 
 
 	@classmethod
 	def __load_version_number(cls, override=False):
-		
-		cls.__reload_cached_data()
+
+		if cls._version_number:
+			cls.__reload_cached_data()
 
 		if not override:
 			assert cls._json_data
@@ -325,7 +328,7 @@ class Setup_Helper:
 			else:
 				while True:
 					new = cls.__inner_load_version_number()
-					confirmed = Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
+					confirmed = _Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
 					if confirmed:
 						break
 		else:
@@ -333,33 +336,37 @@ class Setup_Helper:
 
 		return None
 	
-		f"[ END ] {Setup_Helper.__load_version_number}"
+		f"[ END ] {_Setup_Helper.__load_version_number}"
 
 
 
 	@classmethod
 	def __inner_load_version_number(cls) -> "str":
 		
-		cls._version_number = Setup_Helper.__get_answer(
+		cls._version_number = _Setup_Helper.__get_answer(
 			"What is the version number? ",
-			Version.validate_version_number
+			_Version.validate_version_number
 		)
-		assert cls._json_data
-		cls._json_data["version_number"] = cls._version_number
 
-		with open(CACHE_FILE_PATH, "w") as f:
-			json_x_dump(cls._json_data, f)
+		if cls._json_data:
+			cls._json_data["version_number"] = cls._version_number
+
+		if cls._json_data is not None:
+			with open(CACHE_FILE_PATH, "w") as f:
+				json_x_dump(cls._json_data, f)
 
 		return cls._version_number
 
-		f"[ END ] {Setup_Helper.__inner_load_version_number}"
+		f"[ END ] {_Setup_Helper.__inner_load_version_number}"
 
 
 
 	@classmethod
 	def __load_notes(cls, override=False):
 
-		cls.__reload_cached_data()
+
+		if cls._notes:
+			cls.__reload_cached_data()
 
 		if not override:
 			assert cls._json_data
@@ -368,7 +375,7 @@ class Setup_Helper:
 			else:
 				while True:
 					new = cls.__inner_load_notes()
-					confirmed = Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
+					confirmed = _Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
 					if confirmed:
 						break
 		else:
@@ -376,33 +383,36 @@ class Setup_Helper:
 
 		return None
 
-		f"[ END ] {Setup_Helper.__load_notes}"
+		f"[ END ] {_Setup_Helper.__load_notes}"
 
 
 
 	@classmethod
 	def __inner_load_notes(cls) -> "str":
 		
-		cls._notes = Setup_Helper.__get_answer(
+		cls._notes = _Setup_Helper.__get_answer(
 			"Enter the release notes: ",
 			lambda x: (len(x) > 0, "Notes cannot be empty.")
 		)
-		assert cls._json_data
-		cls._json_data["notes"] = cls._notes
 
-		with open(CACHE_FILE_PATH, "w") as f:
-			json_x_dump(cls._json_data, f)
+		if cls._json_data:
+			cls._json_data["notes"] = cls._notes
+
+		if cls._json_data is not None:
+			with open(CACHE_FILE_PATH, "w") as f:
+				json_x_dump(cls._json_data, f)
 
 		return cls._notes
 
-		f"[ END ] {Setup_Helper.__inner_load_notes}"
+		f"[ END ] {_Setup_Helper.__inner_load_notes}"
 
 
 
 	@classmethod
 	def __load_readme_file_path(cls, override=False):
 		
-		cls.__reload_cached_data()
+		if cls._readme_file_path:
+			cls.__reload_cached_data()
 
 		if not override:
 			assert cls._json_data
@@ -411,7 +421,7 @@ class Setup_Helper:
 			else:
 				while True:
 					new = cls.__inner_load_readme_file_path()
-					confirmed = Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
+					confirmed = _Setup_Helper.__get_y_n(f"Is [{new}] Correct?")
 					if confirmed:
 						break
 		else:
@@ -419,41 +429,46 @@ class Setup_Helper:
 
 		return None
 
-		f"[ END ] {Setup_Helper.__load_readme_file_path}"
+		f"[ END ] {_Setup_Helper.__load_readme_file_path}"
 
 
 
 	@classmethod
 	def __inner_load_readme_file_path(cls) -> "str":
 
-		cls._readme_file_path = Setup_Helper.__get_answer(
+		cls._readme_file_path = _Setup_Helper.__get_answer(
 			"Enter the path to the README file: ",
 			lambda x: (os.path.exists(x), "File does not exist.")
 		)
-		assert cls._json_data
-		cls._json_data["readme_file_path"] = cls._readme_file_path
 
-		with open(CACHE_FILE_PATH, "w") as f:
-			json_x_dump(cls._json_data, f)
+		if cls._json_data:
+			cls._json_data["readme_file_path"] = cls._readme_file_path
+
+		if cls._json_data is not None:
+			with open(CACHE_FILE_PATH, "w") as f:
+				json_x_dump(cls._json_data, f)
 
 		return cls._readme_file_path
 
-		f"[ END ] {Setup_Helper.__inner_load_readme_file_path}"
+		f"[ END ] {_Setup_Helper.__inner_load_readme_file_path}"
 
 
 
 	@classmethod
-	def __load_parameters(cls):
-		cls.__inner_reload_cached_data()
-		if cls._is_using_pip:
-			json_data = cls._json_data_when_using_pip
-			assert json_data is not None
-			cls._date_of_last_modified = datetime_x_date.fromisoformat(json_data["date"])
-			cls._version_number = json_data["version_number"]
-			cls._notes = json_data["notes"]
-			cls._readme_file_path = json_data["readme_file_path"]
-			return
+	def __load_parameters(cls, force=False):
+		if not force:
+			cls.__inner_reload_cached_data()
+			if cls._is_using_pip:
+				json_data = cls._json_data_when_using_pip
+				assert json_data is not None
+				cls._date_of_last_modified = datetime_x_date.fromisoformat(json_data["date"])
+				cls._version_number = json_data["version_number"]
+				cls._notes = json_data["notes"]
+				cls._readme_file_path = json_data["readme_file_path"]
+				return
 		user_wants_to_change_params = False
+		if force:
+			user_wants_to_change_params = True
 		while True:
 
 			cls.__clear_screen()
@@ -464,18 +479,19 @@ class Setup_Helper:
 			print(f"]] Readme File Path:  [{cls._readme_file_path}]")
 			print(f"\n")
 
-			if user_wants_to_change_params:
+			if user_wants_to_change_params == True:
 				options = [
 					["Last Modified Date", 		lambda: cls.__load_date(override=True)],
 					["Current Version Number", 	lambda: cls.__load_version_number(override=True)],
 					["Current Release Notes", 	lambda: cls.__load_notes(override=True)],
 					["README File Path", 		lambda: cls.__load_readme_file_path(override=True)]
 				]
-				print("] What would you like to do?")
+				print("] What would you like to change?")
 				for i, [opt, __] in enumerate(options):
 					print(f"]] - [{i+1}] Change {opt},")
-				print(f"]] - [{len(options)+1}] Go Back.")
-				choice = int(Setup_Helper.__get_answer(
+				fifth_choice = "Go Back." if not force else "Save Changes."
+				print(f"]] - [{len(options)+1}] {fifth_choice}.")
+				choice = int(_Setup_Helper.__get_answer(
 					"Enter the number of your choice: ",
 					lambda x: (
 						x.isdigit() and 0 < int(x) <= len(options)+1,
@@ -489,24 +505,38 @@ class Setup_Helper:
 				callback()
 				continue
 
-
-			cls.__load_date()
-			cls.__load_version_number()
-			cls.__load_notes()
-			cls.__load_readme_file_path()
-
-			confirmed = Setup_Helper.__get_y_n("Is this information correct?")
-			if confirmed:
+			if force:
+				assert cls._date_of_last_modified
+				assert cls._version_number
+				assert cls._notes
+				assert cls._readme_file_path
+				json_data = {}
+				json_data["date"] = cls._date_of_last_modified.isoformat()
+				json_data["version_number"] = cls._version_number
+				json_data["notes"] = cls._notes
+				json_data["readme_file_path"] = cls._readme_file_path
+				with open(CACHE_FILE_PATH, "w") as f:
+					json_x_dump(json_data, f)
+				cls.__clear_screen()
 				break
 			else:
-				user_wants_to_change_params = True
-				print("] Error: Please enter the information again.")
-				time_x_sleep(0.8)
-				cls.__clear_screen()
+				cls.__load_date()
+				cls.__load_version_number()
+				cls.__load_notes()
+				cls.__load_readme_file_path()
+
+				confirmed = _Setup_Helper.__get_y_n("Is this information correct?")
+				if confirmed:
+					break
+				else:
+					user_wants_to_change_params = True
+					print("] Error: Please enter the information again.")
+					time_x_sleep(0.8)
+					cls.__clear_screen()
 
 		return None
 	
-		f"[ END ] {Setup_Helper.__load_parameters}"
+		f"[ END ] {_Setup_Helper.__load_parameters}"
 
 
 
@@ -521,7 +551,7 @@ class Setup_Helper:
 			os.system("clear")
 
 		return None
-		f"[ END ] {Setup_Helper.__clear_screen}"
+		f"[ END ] {_Setup_Helper.__clear_screen}"
 
 
 
@@ -535,7 +565,15 @@ class Setup_Helper:
 	def init(cls, cache_file_path_:"str") -> "None":
 
 		global CACHE_FILE_PATH
-		CACHE_FILE_PATH = cache_file_path_
+		CACHE_FILE_PATH = os.path.abspath(cache_file_path_)
+
+		cls._base_dir = os.path.dirname(__file__)
+		cls._base_dir = os.path.abspath(cls._base_dir)
+
+		cls._date_of_last_modified = None
+		cls._version_number = None
+		cls._notes = None
+		cls._readme_file_path = None
 
 		try:
 			__ = cls.__activated_already
@@ -549,7 +587,7 @@ class Setup_Helper:
 
 		return None
 	
-		f"[ END ] {Setup_Helper.init}"
+		f"[ END ] {_Setup_Helper.init}"
 
 
 
@@ -557,6 +595,9 @@ class Setup_Helper:
 	def _load_from_hardcoded(cls):
 
 		cls._is_using_pip = False
+		if "VIRTUAL_ENV" in os.environ.keys():
+			if "pip" in ' '.join(sys.argv):
+				cls._is_using_pip = True
 		if "PIP_BUILD_TRACKER" in os.environ.keys():
 			cls._is_using_pip = True
 
@@ -569,7 +610,14 @@ class Setup_Helper:
 		needs_update = False
 
 		# Before uploading to PyPi, we need to hardcode the values in a source file.
-		from . import _hardcoded
+		try:
+			from . import _hardcoded #type:ignore
+		except ImportError:
+			if not json_data:
+				cls.__load_parameters(force=True)
+			with open(os.path.join(cls._base_dir, "_hardcoded.py"), "w") as f:
+				f.write(f"\"\"\"\n{json_x_dumps(json_data)}\n\"\"\"\n")
+			from . import _hardcoded
 		with open(_hardcoded.__file__, "r") as f:
 			contents = f.read()
 			splitted = contents.split("\n")[1:-2]
@@ -595,6 +643,10 @@ class Setup_Helper:
 			cls._json_data_when_using_pip = json_data
 			return None
 
+		if not json_data:
+			assert cls._json_data is not None
+			j_data = cls._json_data
+
 		cls._date_of_last_modified = datetime_x_date.fromisoformat(j_data.get("date", None))
 		cls._version_number = j_data.get("version_number", None)
 		cls._notes = j_data.get("notes", None)
@@ -602,14 +654,14 @@ class Setup_Helper:
 
 		return None
 	
-		f"[ END ] {Setup_Helper._load_from_hardcoded}"
+		f"[ END ] {_Setup_Helper._load_from_hardcoded}"
 
 
 
 	@classmethod
 	def setup(cls, name:"str", author:"str", description:"str", **kwargs_for_setup_tools) -> "None":
 		
-		Setup_Helper.__clear_screen()
+		_Setup_Helper.__clear_screen()
 
 		if not cls.__activated_already:
 			raise Exception("You must call `init` before calling `setup`.")
@@ -632,24 +684,35 @@ class Setup_Helper:
 		cls._author = author
 		cls._description = description
 
-		Setup_Helper.__load_parameters()
+		_Setup_Helper.__load_parameters()
 		assert isinstance(cls._date_of_last_modified, datetime_x_date)
 		assert isinstance(cls._version_number, str)
 		assert isinstance(cls._notes, str)
 		assert isinstance(cls._readme_file_path, str)
 
-		cls._version = Version(
+		cls._version = _Version(
 			date=cls._date_of_last_modified,
 			version_number=cls._version_number,
-			notes=Setup_Helper.__parse_notes(cls._notes)
+			notes=_Setup_Helper.__parse_notes(cls._notes)
 		)
 		cls._version.validate()
 
-		cls._finish_setup(kwargs_for_setup_tools)
+		prev_hardcoded = None
+		try:
+			with open(os.path.join(cls._base_dir, "_hardcoded.py"), "r") as f:
+				prev_hardcoded = f.read()
+			if not prev_hardcoded:
+				raise Exception("The `_hardcoded.py` file is empty. Please run the script again.")
+			os.remove(os.path.join(cls._base_dir, "_hardcoded.py"))
+			cls._finish_setup(kwargs_for_setup_tools)
+		finally:
+			assert prev_hardcoded
+			with open(os.path.join(cls._base_dir, "_hardcoded.py"), "w") as f:
+				f.write(prev_hardcoded)
 
 		return None
 
-		f"[ END ] {Setup_Helper.setup}"
+		f"[ END ] {_Setup_Helper.setup}"
 
 
 
@@ -667,54 +730,52 @@ class Setup_Helper:
 		assert isinstance(cls._notes, str)
 		assert isinstance(cls._readme_file_path, str)
 
-		long_description = Setup_Helper.__init_description(cls._readme_file_path)
+
+		long_description = _Setup_Helper.__init_description(cls._readme_file_path)
 		long_description += f"\n## V{cls._version.version_number} released on {cls._version.repr_date()}\n"
 		long_description += cls._notes
 
 		if not cls._is_using_pip:
-			Setup_Helper.__clear_screen()
+			_Setup_Helper.__clear_screen()
 			print(f"Current Directory: [{os.path.abspath(os.getcwd())}].\n\n")
-			is_root_of_project = Setup_Helper.__get_y_n("Is this the root of the project?")
-			Setup_Helper.__clear_screen()
+			is_root_of_project = _Setup_Helper.__get_y_n("Is this the root of the project?")
+			_Setup_Helper.__clear_screen()
 		else:
-			if not os.path.exists("setup.py"):
+			if not os.path.exists(os.path.join(cls._base_dir, "..", "setup.py")):
 				raise FileNotFoundError("The `setup.py` file does not exist. Please run this script from the root of the project directory.")
-			if not os.path.exists("templated_setup/_hardcoded.py"):
+			if not os.path.exists(os.path.join(cls._base_dir, "_hardcoded.py")):
 				raise FileNotFoundError("The `_hardcoded.py` file does not exist. Please run this script from the root of the project directory.")
 			is_root_of_project = True
 
 		if not is_root_of_project:
 			raise Exception("This script must be run from the root of the project directory.")
 		
-		separator = "\\" if os.name == "nt" else "/"
-
 		dirs_to_remove = [
 			"dist",
 			"build",
 			f"{cls._name}.egg-info"
 		]
 
-
 		if not cls._is_using_pip:
 			try:
 				for d in dirs_to_remove:
 					if os.path.exists(d):
-						print(f"\n] WARNING: ABOUT TO REMOVE THE `{os.getcwd()}{separator}{d}` DIRECTORY!!")
+						print(f"\n] WARNING: ABOUT TO REMOVE THE `{os.path.join(os.getcwd(),d)}` DIRECTORY!!")
 						print("] YOU HAVE 3 SECONDS TO CANCEL...")
 						time_x_sleep(3)
 						shutil.rmtree(d, ignore_errors=True)
 			except KeyboardInterrupt:
 				print("] Cancelled.")
 				exit(0)
-			Setup_Helper.__clear_screen()
+			_Setup_Helper.__clear_screen()
 
 		if not cls._is_using_pip:
 			cls._old_sys_argv = sys.argv
 			sys.argv = [sys.argv[0], "sdist"]
-			do_proceed = Setup_Helper.__get_y_n("Would you like to proceed with the build?")
+			do_proceed = _Setup_Helper.__get_y_n("Would you like to proceed with the build?")
 			if not do_proceed:
 				exit(0)
-			Setup_Helper.__clear_screen()
+			_Setup_Helper.__clear_screen()
 
 		setup(
 			name=cls._name,
@@ -731,28 +792,32 @@ class Setup_Helper:
 		else:
 			return
 
-		do_publish = Setup_Helper.__get_y_n("Would you like to publish to PyPi?")
+		do_publish = _Setup_Helper.__get_y_n("Would you like to publish to PyPi?")
 		if not do_publish:
 			exit(0)
 
-		Setup_Helper.__clear_screen()
+		_Setup_Helper.__clear_screen()
 
 		print(f"] Description is readable below...\n{long_description}")
 		print()
 
-		do_proceed = Setup_Helper.__get_y_n("Would you like to proceed?")
+		do_proceed = _Setup_Helper.__get_y_n("Would you like to proceed?")
 		if not do_proceed:
 			exit(0)
 
-		Setup_Helper.__clear_screen()
+		_Setup_Helper.__clear_screen()
 
-		os.system(f"{sys.executable} -m twine upload --verbose --repository pypi dist/*")
+		# It would be very bad if we shipped the cache file with this package.
+		with open(os.path.join(cls._base_dir, "_hardcoded.py"), "w") as f:
+			f.write("\"\"\"\n{}\n\"\"\"\n")
+		dist_dir = os.path.join(cls._base_dir, "dist")
+		os.system(f"{sys.executable} -m twine upload --verbose --repository pypi {dist_dir}/*")
 
 		sys.argv = cls._old_sys_argv
 
 		return None
 	
-		f"[ END ] {Setup_Helper._finish_setup}"
+		f"[ END ] {_Setup_Helper._finish_setup}"
 
 
 
@@ -760,3 +825,9 @@ class Setup_Helper:
 
 
 
+
+
+class templated_setup:
+	Normal_People_Date=_Normal_People_Date
+	Version=_Version
+	Setup_Helper=_Setup_Helper

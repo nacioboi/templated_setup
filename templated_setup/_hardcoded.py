@@ -1,8 +1,8 @@
 """
 {
-    "notes": "hopefully we will be able to install from pip. :p",
-    "date": "2024-04-29",
-    "version_number": "0.9",
+    "date": "2024-05-02",
+    "version_number": "0.92",
+    "notes": "god please kill me. ;(",
     "readme_file_path": "README.md"
 }
 """
