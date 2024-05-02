@@ -8,4 +8,8 @@ templated_setup.Setup_Helper.setup(
 	author="matrikater (Joel Watson)",
 	description=DESCRIPTION,
 	author_email="administraitor@matriko.xyz",
+	install_requires=[
+		"setuptools",
+		"twine"
+	],
 )
