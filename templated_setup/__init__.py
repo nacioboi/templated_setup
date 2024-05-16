@@ -674,8 +674,8 @@ class _Setup_Helper:
 	@classmethod
 	def _handle_installation_via_pip(cls, name):
 
-		import pickled
-		c = pickle_x_loads(base64_x_b64decode(pickled.__INST__.encode()))
+		import _pickled
+		c = pickle_x_loads(base64_x_b64decode(_pickled.__INST__.encode()))
 		version = c["version"]
 		author = c["author"]
 		description = c["description"]
@@ -765,7 +765,7 @@ class _Setup_Helper:
 			f.write(meta)
 		with open(cls._readme_file_path, "r") as f:
 			readme = f.read()
-		with open("README.py", "w") as f:
+		with open("_README.py", "w") as f:
 			f.write("__README__ = \"\"\"")
 			f.write(base64_x_b64encode(readme.encode()).decode())
 			f.write("\"\"\"")
@@ -774,7 +774,7 @@ class _Setup_Helper:
 		assert cls._description is not None
 		assert cls._name is not None
 		assert cls._long_description is not None
-		with open("pickled.py", "w") as f:
+		with open("_pickled.py", "w") as f:
 			f.write("__INST__ = \"\"\"")
 			f.write(base64_x_b64encode(pickle_x_dumps({
 				"version": cls._version,
@@ -789,8 +789,9 @@ class _Setup_Helper:
 		if not "py_modules" in kwargs_for_setup_tools:
 			kwargs_for_setup_tools["py_modules"] = []
 		kwargs_for_setup_tools["py_modules"].append("templated_setup")
-		kwargs_for_setup_tools["py_modules"].append("README")
-		kwargs_for_setup_tools["py_modules"].append("pickled")
+		kwargs_for_setup_tools["py_modules"].append("_README")
+		kwargs_for_setup_tools["py_modules"].append("_pickled")
+		kwargs_for_setup_tools["py_modules"].append(cls._name)
 
 		setup(
 			name=cls._name,
@@ -802,9 +803,9 @@ class _Setup_Helper:
 			**kwargs_for_setup_tools,
 		)
 
-		os.remove("pickled.py")
+		os.remove("_pickled.py")
 		os.remove("templated_setup.py")
-		os.remove("README.py")
+		os.remove("_README.py")
 
 		print("\n] Setup complete.\n\n")
 

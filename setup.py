@@ -18,7 +18,7 @@ def __init_description(readme_file_path_) -> "str":
 	return description
 
 
-version_number = "0.9982"
+version_number = "0.9984"
 notes = "No notes."
 
 long_description = __init_description("README.md")
