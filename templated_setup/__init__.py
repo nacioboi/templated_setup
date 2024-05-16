@@ -156,6 +156,12 @@ class _Setup_Helper:
 
 		description = None
 
+		try:
+			import README #type:ignore
+			return base64_x_b64decode(README.__README__.encode()).decode()
+		except:
+			pass
+
 		if not os.path.exists(readme_file_path_):
 			raise FileNotFoundError(f"No such file or directory: [{readme_file_path_}].")
 		
@@ -632,6 +638,7 @@ class _Setup_Helper:
 		cls._name = name
 		cls._author = author
 		cls._description = description
+		cls._kwargs_for_setup_tools = kwargs_for_setup_tools
 
 		_Setup_Helper.__load_parameters()
 
@@ -667,18 +674,25 @@ class _Setup_Helper:
 	@classmethod
 	def _handle_installation_via_pip(cls, name):
 
-		# NOTE: If we do not hardcode the version, then pip will throw a fit when trying to install the 
-		# NOTE:   `templated-setup` package.
-		from . import _hardcoded #type:ignore
-		kwargs_for_setup_tools = base64_x_b64decode(_hardcoded.__kwargs_for_setup_tools__.encode("utf-8")) #type:ignore
-		kwargs_for_setup_tools = pickle_x_loads(kwargs_for_setup_tools)
-		long_description = base64_x_b64decode(_hardcoded.__long_description__.encode("utf-8")) #type:ignore
-		long_description = pickle_x_loads(long_description)
+		import pickled
+		c = pickle_x_loads(base64_x_b64decode(pickled.__INST__.encode()))
+		version = c["version"]
+		author = c["author"]
+		description = c["description"]
+		long_description = c["long_description"]
+		kwargs_for_setup_tools = c["kwargs_for_setup_tools"]
+		if not kwargs_for_setup_tools.get("py_modules"):
+			kwargs_for_setup_tools["py_modules"] = []
+		kwargs_for_setup_tools["py_modules"].append("templated_setup")
+		kwargs_for_setup_tools["py_modules"].append("pickled")
+		kwargs_for_setup_tools["py_modules"].append("README")
+
+
 		setup(
 			name=name,
-			version=_hardcoded.__version__, #type:ignore
-			author=_hardcoded.__author__, #type:ignore
-			description=_hardcoded.__description__, #type:ignore
+			version=version.version_number,
+			author=author,
+			description=description,
 			long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
 			long_description=long_description, #type:ignore
 			**kwargs_for_setup_tools
@@ -701,6 +715,8 @@ class _Setup_Helper:
 		long_description = _Setup_Helper.__init_description(cls._readme_file_path)
 		long_description += f"\n## V{cls._version.version_number} released on {cls._version.repr_date()}\n"
 		long_description += cls._notes
+
+		cls._long_description = long_description
 
 		_Setup_Helper.__clear_screen()
 		print(f"Current Directory: [{os.path.abspath(os.getcwd())}].\n\n")
@@ -742,17 +758,39 @@ class _Setup_Helper:
 			exit(0)
 		_Setup_Helper.__clear_screen()
 
-		from . import _hardcoded # No `type:ignore` here since this file should exists.
-		s_long_description = pickle_x_dumps(long_description)
-		s_long_description = base64_x_b64encode(s_long_description).decode("utf-8")
-		s_kwargs_for_setup_tools = pickle_x_dumps(kwargs_for_setup_tools)
-		s_kwargs_for_setup_tools = base64_x_b64encode(s_kwargs_for_setup_tools).decode("utf-8")
-		with open(_hardcoded.__file__, "w") as f:
-			f.write(f"__version__ = \"{cls._version.version_number}\"\n")
-			f.write(f"__author__ = \"{cls._author}\"\n")
-			f.write(f"__description__ = \"{cls._description}\"\n")
-			f.write(f"__long_description__ = \"\"\"{s_long_description}\"\"\"\n")
-			f.write(f"__kwargs_for_setup_tools__ = \"\"\"{s_kwargs_for_setup_tools}\"\"\"\n")
+		meta = None
+		with open(__file__, "r") as f:
+			meta = f.read()
+		with open("templated_setup.py", "w") as f:
+			f.write(meta)
+		with open(cls._readme_file_path, "r") as f:
+			readme = f.read()
+		with open("README.py", "w") as f:
+			f.write("__README__ = \"\"\"")
+			f.write(base64_x_b64encode(readme.encode()).decode())
+			f.write("\"\"\"")
+		assert cls._version is not None
+		assert cls._author is not None
+		assert cls._description is not None
+		assert cls._name is not None
+		assert cls._long_description is not None
+		with open("pickled.py", "w") as f:
+			f.write("__INST__ = \"\"\"")
+			f.write(base64_x_b64encode(pickle_x_dumps({
+				"version": cls._version,
+				"author": cls._author,
+				"description": cls._description,
+				"name": cls._name,
+				"long_description": cls._long_description,
+				"kwargs_for_setup_tools": kwargs_for_setup_tools,
+			})).decode())
+			f.write("\"\"\"")
+
+		if not "py_modules" in kwargs_for_setup_tools:
+			kwargs_for_setup_tools["py_modules"] = []
+		kwargs_for_setup_tools["py_modules"].append("templated_setup")
+		kwargs_for_setup_tools["py_modules"].append("README")
+		kwargs_for_setup_tools["py_modules"].append("pickled")
 
 		setup(
 			name=cls._name,
@@ -763,6 +801,10 @@ class _Setup_Helper:
 			long_description=long_description,
 			**kwargs_for_setup_tools,
 		)
+
+		os.remove("pickled.py")
+		os.remove("templated_setup.py")
+		os.remove("README.py")
 
 		print("\n] Setup complete.\n\n")
 
