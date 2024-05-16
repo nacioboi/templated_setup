@@ -683,6 +683,8 @@ class _Setup_Helper:
 		kwargs_for_setup_tools = c["kwargs_for_setup_tools"]
 		if not kwargs_for_setup_tools.get("py_modules"):
 			kwargs_for_setup_tools["py_modules"] = []
+		if not kwargs_for_setup_tools.get("packages"):
+			kwargs_for_setup_tools["packages"] = []
 		kwargs_for_setup_tools["py_modules"].append("templated_setup")
 		kwargs_for_setup_tools["py_modules"].append("pickled")
 		kwargs_for_setup_tools["py_modules"].append("README")
@@ -695,7 +697,8 @@ class _Setup_Helper:
 			author=author,
 			description=description,
 			long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
-			long_description=long_description, #type:ignore
+			long_description=long_description,
+			provides=[name],
 			**kwargs_for_setup_tools
 		)
 
