@@ -157,8 +157,21 @@ class _Setup_Helper:
 		description = None
 
 		try:
-			import README #type:ignore
-			return base64_x_b64decode(README.__README__.encode()).decode()
+			import importlib
+			dirs = []
+			for p, d, __ in os.walk(os.getcwd()):
+				for dd in d:
+					dirs.append(dd)
+			for d in dirs:
+				try:
+					imported = importlib.import_module(d)
+					if imported.__dict__.get("README"):
+						return base64_x_b64decode(
+							imported.README.__README__.encode()
+						).decode()
+						break
+				except Exception as e:
+					pass
 		except:
 			pass
 
@@ -674,22 +687,20 @@ class _Setup_Helper:
 	@classmethod
 	def _handle_installation_via_pip(cls, name):
 
-		import _pickled
+		_pickled = None
+		for p, _, f in os.walk(os.getcwd()):
+			for ff in f:
+				if ff == "_pickled.py":
+					import importlib
+					_pickled = importlib.import_module(f"{name}._pickled")
+		if not _pickled:
+			raise Exception("Could not find the `_pickled` module in the current directory.")
 		c = pickle_x_loads(base64_x_b64decode(_pickled.__INST__.encode()))
 		version = c["version"]
 		author = c["author"]
 		description = c["description"]
 		long_description = c["long_description"]
 		kwargs_for_setup_tools = c["kwargs_for_setup_tools"]
-		if not kwargs_for_setup_tools.get("py_modules"):
-			kwargs_for_setup_tools["py_modules"] = []
-		if not kwargs_for_setup_tools.get("packages"):
-			kwargs_for_setup_tools["packages"] = []
-		kwargs_for_setup_tools["py_modules"].append("templated_setup")
-		kwargs_for_setup_tools["py_modules"].append("pickled")
-		kwargs_for_setup_tools["py_modules"].append("README")
-		kwargs_for_setup_tools["py_modules"].append(name)
-
 
 		setup(
 			name=name,
@@ -698,7 +709,6 @@ class _Setup_Helper:
 			description=description,
 			long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
 			long_description=long_description,
-			provides=[name],
 			**kwargs_for_setup_tools
 		)
 
@@ -765,11 +775,11 @@ class _Setup_Helper:
 		meta = None
 		with open(__file__, "r") as f:
 			meta = f.read()
-		with open("templated_setup.py", "w") as f:
+		with open(f"{cls._name}{os.path.sep}templated_setup.py", "w") as f:
 			f.write(meta)
 		with open(cls._readme_file_path, "r") as f:
 			readme = f.read()
-		with open("_README.py", "w") as f:
+		with open(f"{cls._name}{os.path.sep}_README.py", "w") as f:
 			f.write("__README__ = \"\"\"")
 			f.write(base64_x_b64encode(readme.encode()).decode())
 			f.write("\"\"\"")
@@ -778,7 +788,7 @@ class _Setup_Helper:
 		assert cls._description is not None
 		assert cls._name is not None
 		assert cls._long_description is not None
-		with open("_pickled.py", "w") as f:
+		with open(f"{cls._name}{os.path.sep}_pickled.py", "w") as f:
 			f.write("__INST__ = \"\"\"")
 			f.write(base64_x_b64encode(pickle_x_dumps({
 				"version": cls._version,
@@ -790,13 +800,10 @@ class _Setup_Helper:
 			})).decode())
 			f.write("\"\"\"")
 
-		if not "py_modules" in kwargs_for_setup_tools:
-			kwargs_for_setup_tools["py_modules"] = []
-		kwargs_for_setup_tools["py_modules"].append("templated_setup")
-		kwargs_for_setup_tools["py_modules"].append("_README")
-		kwargs_for_setup_tools["py_modules"].append("_pickled")
-		kwargs_for_setup_tools["py_modules"].append(cls._name)
-
+		if not "package_data" in kwargs_for_setup_tools:
+			kwargs_for_setup_tools["package_data"] = {'':[]}
+		kwargs_for_setup_tools["package_data"][''].append('*.py')
+		
 		setup(
 			name=cls._name,
 			version=cls._version.version_number,
@@ -807,11 +814,54 @@ class _Setup_Helper:
 			**kwargs_for_setup_tools,
 		)
 
-		os.remove("_pickled.py")
-		os.remove("templated_setup.py")
-		os.remove("_README.py")
+		os.remove(f"{cls._name}{os.path.sep}_pickled.py")
+		os.remove(f"{cls._name}{os.path.sep}templated_setup.py")
+		os.remove(f"{cls._name}{os.path.sep}_README.py")
 
 		print("\n] Setup complete.\n\n")
+
+		# We must unzip the tar.gz file and conduct post-processing.
+		import tarfile
+		dist_dir = os.path.join(os.getcwd(), "dist")
+		tar_file = None
+		for p, d, f in os.walk(dist_dir):
+			for ff in f:
+				if ff.endswith(f"{cls._version.version_number}.tar.gz"):
+					tar_file = os.path.join(p, ff)
+					break
+			if tar_file:
+				break
+		if not tar_file:
+			raise FileNotFoundError("Could not find the tar.gz file.")
+		with tarfile.open(tar_file, "r:gz") as tar:
+			tar.extractall(dist_dir)
+		os.remove(tar_file)
+		shutil.move(
+			os.path.join(
+				dist_dir,
+				f"{cls._name}-{cls._version.version_number}",
+				f"{cls._name}",
+				f"templated_setup.py"
+			),
+			os.path.join(
+				dist_dir,
+				f"{cls._name}-{cls._version.version_number}",
+				"templated_setup.py"
+			)
+		)
+		# Zip the tar file back up.
+		with tarfile.open(tar_file, "w:gz") as tar:
+			tar.add(
+				os.path.join(
+					dist_dir,
+					f"{cls._name}-{cls._version.version_number}"
+				),
+				f"{cls._name}-{cls._version.version_number}"
+			)
+		# Remove the temp dir.
+		shutil.rmtree(
+			os.path.join(dist_dir, f"{cls._name}-{cls._version.version_number}")
+		)
 
 		do_publish = _Setup_Helper.__get_y_n("Would you like to publish to PyPi?")
 		if not do_publish:
